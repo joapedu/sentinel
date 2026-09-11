@@ -1,0 +1,191 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # O repositório ainda pode conter apenas a estrutura inicial. Este job é o
+  # único obrigatório e evita que o CI dependa de módulos que ainda não foram
+  # implementados.
+  repository:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar estrutura inicial
+        run: |
+          set -euo pipefail
+          test -f README.md
+          test -d frontend
+          test -d services/core/quarkus
+          test -d services/ingestion/go
+          test -d infra/database
+          test -d infra/docker
+          test -d docs
+          echo "Estrutura inicial validada."
+
+  # Descobre o que já foi implementado antes de iniciar os jobs específicos.
+  # Assim, diretórios vazios ou contendo apenas .gitkeep não quebram o pipeline.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.components.outputs.go }}
+      maven: ${{ steps.components.outputs.maven }}
+      gradle: ${{ steps.components.outputs.gradle }}
+      node: ${{ steps.components.outputs.node }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: components
+        name: Detectar componentes implementados
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if find services -name go.mod -print -quit | grep -q .; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if find . -path './.git' -prune -o -name pom.xml -print -quit | grep -q .; then
+            echo "maven=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "maven=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if find . -path './.git' -prune -o -name gradlew -type f -print -quit | grep -q .; then
+            echo "gradle=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "gradle=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if find . -path './.git' -prune -o -path '*/node_modules' -prune -o -name package.json -print -quit | grep -q .; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  go:
+    needs: detect
+    if: needs.detect.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Formatar, analisar e testar módulos Go
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' module; do
+            directory=$(dirname "$module")
+            echo "Validando $directory"
+            (
+              cd "$directory"
+              test -z "$(gofmt -l .)"
+              go vet ./...
+              go test ./...
+              go build ./...
+            )
+          done < <(find services -name go.mod -print0)
+
+  maven:
+    needs: detect
+    if: needs.detect.outputs.maven == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Testar projetos Maven
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' pom; do
+            directory=$(dirname "$pom")
+            echo "Testando $directory"
+            (cd "$directory" && mvn -B -ntp test)
+          done < <(find . -path './.git' -prune -o -name pom.xml -print0)
+
+  gradle:
+    needs: detect
+    if: needs.detect.outputs.gradle == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Testar projetos Gradle
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' wrapper; do
+            directory=$(dirname "$wrapper")
+            echo "Testando $directory"
+            (cd "$directory" && chmod +x ./gradlew && ./gradlew test)
+          done < <(find . -path './.git' -prune -o -name gradlew -type f -print0)
+
+  frontend:
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependências e executar scripts disponíveis
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' package; do
+            directory=$(dirname "$package")
+            echo "Validando $directory"
+            (
+              cd "$directory"
+              if [ -f package-lock.json ]; then npm ci; else npm install; fi
+              npm run lint --if-present
+              npm run test --if-present
+              npm run build --if-present
+            )
+          done < <(find . -path './.git' -prune -o -path '*/node_modules' -prune -o -name package.json -print0)
+
+  ci:
+    if: always()
+    needs: [repository, detect, go, maven, gradle, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar resultados
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Resultados: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" = failure ] || [ "$result" = cancelled ]; then
+              echo "::error::Um dos jobs do CI falhou ou foi cancelado."
+              exit 1
+            fi
+          done
+          echo "CI concluído com sucesso."
