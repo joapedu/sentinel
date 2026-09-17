@@ -441,5 +441,9 @@ IA sobre o conhecimento
 Memória operacional inteligente
 ```
 
+### Videos:
+
+https://drive.google.com/file/d/1_UqOB8U5I0igBoKNTvT8Q8m4mYwTNIJe/view
+https://drive.google.com/file/d/1K44g8bbhSyI1jahGi-0p1Ez55z3CALA7/view
 Isso mantém o projeto ambicioso o suficiente para ser interessante, mas evita que o grupo dependa de IA ou de uma infraestrutura excessivamente complexa para entregar o MVP em um semestre.
 
