@@ -1,5 +1,6 @@
 package com.sentinel.core.project;
 
+import com.sentinel.core.auth.InvalidCredentialsException;
 import com.sentinel.core.auth.User;
 import com.sentinel.core.auth.InvalidCredentialsException;
 import io.quarkus.security.Authenticated;

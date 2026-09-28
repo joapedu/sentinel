@@ -39,7 +39,7 @@ A resposta contem `accessToken`, `refreshToken`, `tokenType`, `expiresIn` e apen
 ## Cadastro e login
 
 1. O email e tratado com `trim` e convertido para minusculas usando `Locale.ROOT`.
-2. A senha exige entre 12 e 128 caracteres.
+2. A senha exige entre 12 e 72 caracteres e no maximo 72 bytes em UTF-8, limite adotado para nao permitir que o bcrypt ignore parte da credencial.
 3. A senha e armazenada com bcrypt; o valor original nunca e persistido.
 4. O indice unico case-insensitive impede dois cadastros para o mesmo email.
 5. O login usa uma resposta generica `invalid_credentials` para email inexistente, senha incorreta ou usuario inativo.
