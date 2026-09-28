@@ -54,7 +54,7 @@ public class AuthService {
 
     @Transactional
     public AuthDtos.TokenResponse refresh(String rawToken) {
-        RefreshSession session = RefreshSession.find("tokenHash", sha256(rawToken)).firstResult();
+RefreshSession session = RefreshSession.find("tokenHash", sha256(rawToken)).withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).firstResult();
         Instant now = Instant.now();
         if (session == null || !session.isUsable(now)) {
             if (session != null && session.revokedAt != null) {
