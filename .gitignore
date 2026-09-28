@@ -28,9 +28,6 @@ go.work
 # Maven and other Java build outputs
 target/
 
-# test used in dev enviroment
-services/core/quarkus/src/test/resources/*
-
 # Compiled class file
 *.class
 
