@@ -1,0 +1,11 @@
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\api\ApiExceptionMapper.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\AuthDtos.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\AuthResource.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\AuthService.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\EmailAlreadyRegisteredException.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\InvalidCredentialsException.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\RefreshSession.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\auth\User.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\project\Project.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\project\ProjectDtos.java
+C:\Users\joaoe\Documents\sentinel\services\core\quarkus\src\main\java\com\sentinel\core\project\ProjectResource.java

@@ -1,0 +1,10 @@
+com\sentinel\core\auth\User.class
+com\sentinel\core\auth\AuthResource.class
+com\sentinel\core\auth\AuthDtos$Credentials.class
+com\sentinel\core\auth\AuthDtos$TokenResponse.class
+com\sentinel\core\api\ApiExceptionMapper$ErrorResponse.class
+com\sentinel\core\auth\AuthDtos$MeResponse.class
+com\sentinel\core\api\ApiExceptionMapper.class
+com\sentinel\core\auth\AuthDtos$PublicUser.class
+com\sentinel\core\auth\AuthDtos.class
+com\sentinel\core\auth\AuthDtos$RefreshRequest.class
