@@ -26,4 +26,12 @@ class AuthServiceTest {
         assertEquals(AuthService.sha256("opaque-token"), AuthService.sha256("opaque-token"));
         assertNotEquals("opaque-token", AuthService.sha256("opaque-token"));
     }
+
+    @Test
+    void rejectsPasswordsLongerThanBcryptUtf8Limit() {
+        String password = "a".repeat(71) + "é";
+
+        assertTrue(password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72);
+        assertTrue(!new AuthDtos.Credentials("person@example.com", password).hasValidPasswordByteLength());
+    }
 }

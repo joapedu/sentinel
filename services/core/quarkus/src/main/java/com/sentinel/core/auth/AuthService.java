@@ -3,7 +3,10 @@ package com.sentinel.core.auth;
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,6 +33,9 @@ public class AuthService {
     @ConfigProperty(name = "mp.jwt.verify.audiences")
     String audience;
 
+    @Inject
+    EntityManager entityManager;
+
     @Transactional
     public AuthDtos.TokenResponse register(AuthDtos.Credentials credentials) {
         String email = normalizeEmail(credentials.email());
@@ -39,7 +45,15 @@ public class AuthService {
         User user = new User();
         user.email = email;
         user.passwordHash = BcryptUtil.bcryptHash(credentials.password());
-        user.persist();
+        try {
+            user.persist();
+            entityManager.flush();
+        } catch (PersistenceException exception) {
+            if (hasConstraintViolation(exception)) {
+                throw new EmailAlreadyRegisteredException();
+            }
+            throw exception;
+        }
         return issueTokens(user);
     }
 
@@ -54,7 +68,7 @@ public class AuthService {
 
     @Transactional
     public AuthDtos.TokenResponse refresh(String rawToken) {
-        RefreshSession session = RefreshSession.find("tokenHash", sha256(rawToken)).firstResult();
+RefreshSession session = RefreshSession.find("tokenHash", sha256(rawToken)).withLock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE).firstResult();
         Instant now = Instant.now();
         if (session == null || !session.isUsable(now)) {
             if (session != null && session.revokedAt != null) {
@@ -113,6 +127,17 @@ public class AuthService {
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 is unavailable", exception);
         }
+    }
+
+    private static boolean hasConstraintViolation(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof org.hibernate.exception.ConstraintViolationException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static String randomToken() {
