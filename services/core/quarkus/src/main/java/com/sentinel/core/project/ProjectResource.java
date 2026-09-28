@@ -1,6 +1,7 @@
 package com.sentinel.core.project;
 
 import com.sentinel.core.auth.User;
+import com.sentinel.core.auth.InvalidCredentialsException;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -42,6 +43,10 @@ public class ProjectResource {
     }
 
     private User currentUser() {
-        return User.findById(UUID.fromString(token.getSubject()));
+        User user = User.findById(UUID.fromString(token.getSubject()));
+        if (user == null || !user.active) {
+            throw new InvalidCredentialsException();
+        }
+        return user;
     }
 }
