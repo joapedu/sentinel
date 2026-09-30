@@ -25,6 +25,9 @@
 go.work
 
 ### Java ###
+# Maven and other Java build outputs
+target/
+
 # Compiled class file
 *.class
 
