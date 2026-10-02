@@ -6,7 +6,7 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE UNIQUE INDEX ux_users_email_lower ON users (LOWER(email));
+CREATE UNIQUE INDEX ux_users_email ON users (email);
 
 CREATE TABLE refresh_sessions (
     id UUID PRIMARY KEY,

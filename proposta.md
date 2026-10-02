@@ -261,7 +261,6 @@ As prioridades seguem:
 
 - Configuração do monorepo;
 - Java + Quarkus;
-- Go;
 - Docker;
 - CI;
 - Banco de dados;
