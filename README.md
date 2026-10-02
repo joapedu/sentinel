@@ -112,10 +112,89 @@ O foco inicial são desenvolvedores, tech leads e equipes pequenas e médias que
 - `infra/`: configurações de infraestrutura, banco de dados e containers;
 - `docs/`: documentação complementar.
 
-## Status
+## Execução Local com Docker Compose
 
-O projeto está em desenvolvimento, com o escopo inicial definido no documento [proposta.md](proposta.md).
+O banco de dados PostgreSQL do SENTINEL é orquestrado via `docker-compose.yml` na raiz:
 
+```bash
+# Subir o PostgreSQL em background
+docker compose up -d
+
+# Visualizar logs do banco
+docker compose logs -f postgres
+
+# Parar o container
+docker compose down
+```
+
+As variáveis de ambiente podem ser customizadas no arquivo `.env` (baseado no `.env.example`).
+
+## Migrações de Banco de Dados (Flyway)
+
+O esquema do banco de dados é versionado e gerenciado pelo Flyway:
+- `V1__create_auth_and_projects.sql`: tabelas `users`, `refresh_sessions` e `projects`.
+- `V2__create_technical_decisions.sql`: tabela `technical_decisions` com integridade referencial (`ON DELETE CASCADE`) e índices em `project_id` e `status`.
+
+As migrações são executadas automaticamente na inicialização da aplicação (`quarkus.flyway.migrate-at-start=true`), e a validação estrita do Hibernate ORM (`quarkus.hibernate-orm.database.generation=validate`) assegura que o ORM não altera o esquema.
+
+## Arquitetura (Clean Architecture)
+
+O serviço principal em Quarkus segue a **Clean Architecture** (Ports & Adapters):
+
+- `com.sentinel.core.domain`: entidades e records puros (`Project`, `TechnicalDecision`, `DecisionStatus`, `PageResult`) e portas de repositório (`ProjectRepository`, `TechnicalDecisionRepository`), **100% agnósticos de frameworks**.
+- `com.sentinel.core.application`: casos de uso (`ListProjectsUseCase`, `GetProjectUseCase`, `CreateDecisionUseCase`, `ListDecisionsUseCase`, `GetDecisionUseCase`).
+- `com.sentinel.core.adapter.in.rest`: adaptadores JAX-RS REST (`ProjectResource`, `TechnicalDecisionResource`), DTOs com validação Bean Validation e tratamento de erros RFC 9457 (`ProblemDetailsExceptionMapper`).
+- `com.sentinel.core.adapter.out.persistence`: adaptadores Panache/PostgreSQL (`PanacheProjectRepository`, `PanacheTechnicalDecisionRepository`) e entidades JPA com conversão isolada.
+- `com.sentinel.core.adapter.out.memory`: implementações de repositório em memória (`InMemoryProjectRepository`, `InMemoryTechnicalDecisionRepository`) para testes unitários rápidos.
+
+A pureza arquitetural é verificada de forma contínua pelo teste ArchUnit em `ArchitectureTest.java`.
+
+## Endpoints e OpenAPI (Swagger UI)
+
+Todos os endpoints são documentados e acessíveis no runtime:
+
+- **Swagger UI**: `http://localhost:8080/q/swagger-ui`
+- **Especificação OpenAPI**: `http://localhost:8080/q/openapi`
+
+### Endpoints da Sprint 1 (`/api/v1`):
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/v1/auth/register` | Cadastro de usuário |
+| POST | `/api/v1/auth/login` | Login e emissão de JWT |
+| POST | `/api/v1/auth/refresh` | Rotação de refresh token |
+| POST | `/api/v1/auth/logout` | Revogação de sessão |
+| GET | `/api/v1/auth/me` | Dados do usuário autenticado |
+| GET | `/api/v1/projects` | Listagem paginada de projetos com filtro por nome |
+| GET | `/api/v1/projects/{id}` | Consulta de projeto por ID |
+| POST | `/api/v1/projects/{projectId}/decisions` | Criação de decisão técnica (201 + `Location`) |
+| GET | `/api/v1/projects/{projectId}/decisions` | Listagem paginada de decisões com filtros por `status` e `title` |
+| GET | `/api/v1/projects/{projectId}/decisions/{decisionId}` | Consulta de decisão técnica por ID |
+
+### Padronização de Erros (RFC 9457 Problem Details)
+Todas as falhas de validação e regras de negócio respondem com `application/problem+json`:
+- `400 Bad Request`: erros de validação sintática ou de campos (com lista `invalidParams`).
+- `401 Unauthorized`: token ausente ou inválido.
+- `404 Not Found`: recurso ou projeto inexistente.
+- `409 Conflict`: duplicidade (ex: email já cadastrado).
+- `500 Internal Server Error`: erros inesperados sem vazamento de stacktrace.
+
+## Testes Automatizados e CI
+
+A suíte de testes contempla:
+- **Testes Unitários**: domínio e casos de uso com repositórios em memória.
+- **Testes de Arquitetura**: ArchUnit verificando ausência de acoplamento do domínio.
+- **Testes de Integração REST**: `@QuarkusTest` com banco em memória H2 (modo PostgreSQL) e Flyway executando no perfil `%test`.
+
+Para rodar os testes localmente:
+```bash
+cd services/core/quarkus
+mvn -B -ntp test
+```
+
+## Apresentação da Sprint 1 (Vídeo)
+
+- **Roteiro detalhado de gravação:** [docs/roteiro-video-sprint-1.md](docs/roteiro-video-sprint-1.md)
+- **Vídeo de Demonstração (5 min):** [Assistir no YouTube/Drive](https://youtu.be/SEU_LINK_AQUI) *(substituir pelo link após a gravação)*
 
 ## Realizado por:
 - [João Eduardo](https://github.com/joapedu)
