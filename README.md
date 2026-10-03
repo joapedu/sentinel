@@ -194,7 +194,7 @@ mvn -B -ntp test
 ## Apresentação da Sprint 1 (Vídeo)
 
 - **Roteiro detalhado de gravação:** [docs/roteiro-video-sprint-1.md](docs/roteiro-video-sprint-1.md)
-- **Vídeo de Demonstração (5 min):** [Assistir no YouTube/Drive](https://youtu.be/SEU_LINK_AQUI) *(substituir pelo link após a gravação)*
+- **Vídeo de Demonstração (5 min):** [Assistir no YouTube/Drive](https://youtu.be/vu_rK5sNAPk)
 
 ## Realizado por:
 - [João Eduardo](https://github.com/joapedu)
